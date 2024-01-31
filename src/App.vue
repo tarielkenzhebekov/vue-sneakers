@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, reactive, watch } from 'vue'
+import { onMounted, ref, reactive, watch, provide } from 'vue'
 import axios from 'axios'
 
 import Header from './components/Header.vue'
@@ -18,6 +18,12 @@ const onChangeSelect = (event) => {
 
 const onChangeSearchInput = (event) => {
   filters.searchQuery = event.target.value;
+}
+
+const addToFavorite = async (item) => {
+  item.isFavorite = !item.isFavorite;
+
+  console.log(item);
 }
 
 const fetchFavorites = async () => {
@@ -74,6 +80,8 @@ onMounted(async () => {
 });
 
 watch(filters, fetchItems);
+
+provide('addToFavorite', addToFavorite)
 
 </script>
 

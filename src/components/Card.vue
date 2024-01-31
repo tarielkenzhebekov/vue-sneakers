@@ -1,19 +1,20 @@
 <script setup>
 defineProps({
+    id: Number,
     title: String,
     imageUrl: String,
     price: Number,
     isFavorite: Boolean,
     isAdded: Boolean,
-    onClickAdd: Function,
-    onClickFavorite: Function
+    onClickFavorite: Function,
+    onClickAdd: Function
 })
 </script>
 
 <template>
 
 <div class="relative bg-white border border-slate-200 rounded-3xl p-6 cursor-pointer hover:-translate-y-2 hover:shadow-xl transition">
-    <img @click="onClickFavorite" :src="isFavorite ? '/like-2.svg' : '/like-1.svg'" class="absolute top-8 left-8" alt="Like" />
+    <img v-on:click="onClickFavorite" :src="isFavorite ? '/like-2.svg' : '/like-1.svg'" class="absolute top-8 left-8" alt="Like" />
 
     <img :src="imageUrl" alt="Sneaker 1" />
     <p class="mt-2">{{ title }}</p>
