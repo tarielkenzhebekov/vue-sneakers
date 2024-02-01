@@ -103,6 +103,8 @@ watch(filters, fetchItems);
 
 <template>
 
+<Drawer />
+
 <div class="bg-white w-4/5 m-auto rounded-2xl shadow-2xl mt-14">
   <Header />
   <div class="p-10">
