@@ -8,7 +8,7 @@ defineProps({
     isAdded: Boolean,
     onClickFavorite: Function,
     onClickAdd: Function
-})
+});
 </script>
 
 <template>

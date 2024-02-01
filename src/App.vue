@@ -4,6 +4,7 @@ import axios from 'axios'
 
 import Header from './components/Header.vue'
 import CardList from './components/CardList.vue'
+import Drawer from './components/Drawer.vue'
 
 const items = ref([]);
 
@@ -21,9 +22,25 @@ const onChangeSearchInput = (event) => {
 }
 
 const addToFavorite = async (item) => {
-  item.isFavorite = !item.isFavorite;
+  try {
+    if (!item.isFavorite) {
+      item.isFavorite = true;
 
-  console.log(item);
+      const obj = {
+        productId: item.id
+      };
+
+      const { data } = await axios.post('https://982d905e50f84a79.mokky.dev/favorites', obj);
+      console.log(data);
+      item.favoriteId = data.id;
+    } else {
+      item.isFavorite = false;
+      await axios.delete(`https://982d905e50f84a79.mokky.dev/favorites/${item.favoriteId}`);
+      item.favoriteId = null;
+    }
+  } catch(err) {
+    console.log(err);
+  }
 }
 
 const fetchFavorites = async () => {
@@ -66,7 +83,8 @@ const fetchItems = async() => {
     items.value = data.map(obj => ({
       ...obj,
       isFavorite: false,
-      isAdded: false
+      isAdded: false,
+      favoriteId : null
     }))
 
   } catch (err) {
@@ -80,8 +98,6 @@ onMounted(async () => {
 });
 
 watch(filters, fetchItems);
-
-provide('addToFavorite', addToFavorite)
 
 </script>
 
@@ -108,7 +124,7 @@ provide('addToFavorite', addToFavorite)
       </div>
     </div >
     <div class="mt-6">
-      <CardList :items="items"/>
+      <CardList :items="items" @addToFavorite="addToFavorite"/>
     </div>
   </div>
 </div>
