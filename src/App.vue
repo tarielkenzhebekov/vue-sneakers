@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, reactive, watch, provide } from 'vue'
+import { onMounted, ref, reactive, watch, provide, computed } from 'vue'
 import axios from 'axios'
 
 import Header from './components/Header.vue'
@@ -7,6 +7,32 @@ import CardList from './components/CardList.vue'
 import Drawer from './components/Drawer.vue'
 
 const items = ref([]);
+
+const cart = ref([]);
+
+const isCreatingOrder = ref(false);
+
+const totalPrice = computed(
+  () => cart.value.reduce((acc, item) => acc + item.price, 0)
+);
+
+const vatPrice = computed(
+  () => Math.round(totalPrice.value * 0.05)
+);
+
+const cartButtonDisabled = computed(
+  () => isCreatingOrder.value ? true : totalPrice.value ? false : true
+);
+
+const drawerOpen = ref(false);
+
+const closeDrawer = () => {
+  drawerOpen.value = false;
+}
+
+const openDrawer = () => {
+  drawerOpen.value = true;
+}
 
 const filters = reactive({
   sortBy: 'id',
@@ -43,22 +69,68 @@ const addToFavorite = async (item) => {
   }
 }
 
+const addToCart = (item) => {
+  cart.value.push(item);
+  item.isAdded = true;
+}
+
+const removeFromCart = (item) => {
+  cart.value.splice(cart.value.indexOf(item), 1);
+  item.isAdded = false;
+}
+
+const createOrder = async () => {
+  try {
+    isCreatingOrder.value = true;
+    const { data } = await axios.post(`https://982d905e50f84a79.mokky.dev/orders`, {
+      items: cart.value,
+      totalPrice: totalPrice.value
+    });
+
+    cart.value = [];
+
+    items.value = items.value.map(item => {
+      if (!item.isAdded) {
+        return item;
+      }
+      return {
+        ...item,
+        isAdded: false
+      }
+    });
+    
+    return data;
+  } catch(err) {
+    console.log(err);
+  } finally {
+    isCreatingOrder.value = false;
+  }
+}
+
+const onClickAddPlus = (item) => {
+  if (!item.isAdded) {
+    addToCart(item);
+  } else {
+    removeFromCart(item);
+  }
+}
+
 const fetchFavorites = async () => {
   try {
     const { data : favorites } = await axios.get('https://982d905e50f84a79.mokky.dev/favorites')
 
     items.value = items.value.map(item => {
-      const favorite = favorites.find(favorite => favorite.productId === item.id);
+        const favorite = favorites.find(favorite => favorite.productId === item.id);
 
-      if (!favorite) {
-        return item;
-      }
+        if (!favorite) {
+          return item;
+        }
 
-      return {
-        ...item,
-        isFavorite: true,
-        favoriteId: favorite.id
-      }
+        return {
+          ...item,
+          isFavorite: true,
+          favoriteId: favorite.id
+        }
     });
 
   } catch (err) {
@@ -93,20 +165,48 @@ const fetchItems = async() => {
 }
 
 onMounted(async () => {
+  const localCart = localStorage.getItem('cart');
+  cart.value = localCart ? JSON.parse(localCart) : [];
+  
   await fetchItems();
+  
+  items.value = items.value.map((item) => ({
+    ...item,
+    isAdded: cart.value.some((cartItem) => cartItem.id === item.id)
+  }))
+
   await fetchFavorites();
 });
 
 watch(filters, fetchItems);
 
+watch(
+  cart,
+  () => {
+    localStorage.setItem('cart', JSON.stringify(cart.value))
+  },
+  { deep : true }
+)
+
+provide('cart', {
+  cart,
+  closeDrawer,
+  removeFromCart
+})
+
 </script>
 
 <template>
 
-<Drawer />
+<Drawer v-if="drawerOpen" 
+  :total-price="totalPrice"
+  :vat-price="vatPrice"
+  :button-disabled="cartButtonDisabled"
+  @create-order="createOrder"
+/>
 
 <div class="bg-white w-4/5 m-auto rounded-2xl shadow-2xl mt-14">
-  <Header />
+  <Header :total-price="totalPrice" @open-drawer="openDrawer" />
   <div class="p-10">
     <div class="flex justify-between items-center">
       <h2 class="text-3xl font-bold mb-6">All Sneakers</h2>
@@ -121,12 +221,19 @@ watch(filters, fetchItems);
 
         <div class="relative">
           <img class="absolute left-4 top-3" src="/search.svg"/>
-          <input v-on:input="onChangeSearchInput" class="border rounded-md py-2 pl-12 pr-4 outline-none focus:border-gray-400" type="text" placeholder="Search..."/>
+          <input 
+            v-on:input="onChangeSearchInput" 
+            class="border rounded-md py-2 pl-12 pr-4 outline-none focus:border-gray-400" 
+            type="text"
+            placeholder="Search..."/>
         </div>
       </div>
-    </div >
+    </div>
     <div class="mt-6">
-      <CardList :items="items" @addToFavorite="addToFavorite"/>
+      <CardList 
+        :items="items" 
+        @add-to-favorite="addToFavorite" 
+        @on-click-add-plus="onClickAddPlus" />
     </div>
   </div>
 </div>
