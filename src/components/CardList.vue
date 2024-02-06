@@ -3,7 +3,8 @@
 import Card from './Card.vue'
 
 defineProps({
-  items: Array
+  items: Array,
+  favorites: Boolean
 });
 
 const emit = defineEmits(['addToFavorite', 'onClickAddPlus']);
@@ -22,8 +23,8 @@ const emit = defineEmits(['addToFavorite', 'onClickAddPlus']);
         :imageUrl="item.imageUrl"
         :isFavorite="item.isFavorite"
         :isAdded="item.isAdded"
-        :onClickFavorite="() => emit('addToFavorite', item)"
-        :onClickAdd="() => emit('onClickAddPlus', item)"
+        :onClickFavorite="favorites ? null : () => emit('addToFavorite', item)"
+        :onClickAdd="favorites ? null : () => emit('onClickAddPlus', item)"
       />
     </div>
 
